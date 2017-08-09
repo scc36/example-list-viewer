@@ -5,10 +5,10 @@ This is a tool for converting *The Infatuation* restaurant imessage list shares 
 
 Installation
 ------------
-# Written in python2.7
-# Need to backport lzma
-sudo apt-get install liblzma-dev
-pip install -r requirements.txt
+Written in python2.7. Need to backport lzma
+
+* sudo apt-get install liblzma-dev
+* pip install -r requirements.txt
 
 Usage
 -----
