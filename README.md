@@ -24,3 +24,8 @@ The imessage list shares have the format ```https://api.theinfatuation.com/servi
 * revert base64 encoding
 * Uncompress lzma
 * Process Protocol Buffer
+
+Testing
+-------
+
+run ```python -m unittest tests.test_parser``` in the base directory

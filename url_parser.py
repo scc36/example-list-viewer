@@ -34,16 +34,41 @@ class UrlParser(object):
         """
 
         # HTTP convert
-        parsed_url = http_parse(self.raw_url)
+        try:
+            parsed_url = http_parse(self.raw_url)
 
-        url_content = parsed_url["content"]
+            url_content = parsed_url["content"]
+        except Exception as e:
+            self.url_data = {
+                "status": "Http failed: %s" % str(e)
+            }
+            return
 
-        decoded_content = step_decode(url_content)
+        try:
+            decoded_content = step_decode(url_content)
+        except Exception as e:
+            self.url_data = {
+                "status": "Decode failed: %s" % str(e)
+            }
+            return
 
         # Decompress
-        decompressed_content = lzma.decompress(decoded_content)
+        try:
+            decompressed_content = lzma.decompress(decoded_content)
+        except Exception as e:
+            self.url_data = {
+                "status": "Decompress failed: %s" % str(e)
+            }
+            return
 
-        list_details = protocol_parsing(decompressed_content)
+        # Convert proto to dictionary
+        try:
+            list_details = protocol_parsing(decompressed_content)
+        except Exception as e:
+            self.url_data = {
+                "status": "Parsing failed: %s" % str(e)
+            }
+            return
 
         self.url_data = {
             "imessaage_id": parsed_url["id"],
@@ -76,8 +101,12 @@ def http_parse(url):
     #  More a python3
     #query_content = urlparse.parse_qs(parsed_url.query)
     #url_content = query_content.get("content", "")
+
     # Remove "content=" (length of 8) and add padding
     url_content = parsed_url.query[8:]
+
+    if not url_content:
+        raise ValueError ("URL did not contain a \"content\" query")
 
     return {
         "id": url_id,
@@ -114,12 +143,11 @@ def protocol_parsing(unpacked_content):
     parsed_list = restaurantlist_pb2.List()
     parsed_list.ParseFromString(unpacked_content)
 
-    # strings are unicode, turn them into utf8
     return_list = {
         "list_id": parsed_list.id,
-        "list_label": parsed_list.label,
+        "list_alabel": parsed_list.label,
         "image_url": parsed_list.image_url,
-        "items": []
+        "list_items": []
     }
 
     # Annotation
@@ -127,7 +155,7 @@ def protocol_parsing(unpacked_content):
 
     # Items
     for item in parsed_list.items:
-        return_list["items"].append (protobuf_item(item))
+        return_list["list_items"].append (protobuf_item(item))
 
     return return_list
 
@@ -141,14 +169,12 @@ def protobuf_annotation (annotation):
         annotation == restaurantlist_pb2.Annotation
     """
 
-    # convert to string, and encode unicode
     return_annotation = {
         "timestamp": annotation.timestamp.ToJsonString(),
         "message": annotation.msg
     }
 
     # user = restaurantlist_pb2.User
-    #  encode unicode
     return_annotation ["user"] = {
         "user_id": annotation.user.id,
         "name": annotation.user.name
